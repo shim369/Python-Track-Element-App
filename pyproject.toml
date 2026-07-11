@@ -1,0 +1,63 @@
+[project]
+name = "python-track-element-app"
+version = "0.1.0"
+description = "An app that analyzes Spotify data and selects songs using a proprietary DJ logic."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2.0",
+    "plotly>=5.20.0",
+    "python-dotenv>=1.0.1",
+    "spotipy>=2.23.0",
+    "streamlit>=1.32.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.9.0",
+    "pytest-mock>=3.14.0",
+    "pytest>=8.1.0",
+    "ruff>=0.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+track-element-app = "track_element_app.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/track_element_app"]
+
+# --- Ruffの設定 ---
+[tool.ruff]
+target-version = "py312"
+line-length = 130
+# 無駄な解析をスキップするための除外パス設定
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# E: pycodestyleエラー, F: Pyflakes, I: isort(並び替え), N: PEP8命名規則, UP: pyupgrade, B: bugbear
+select = ["E", "F", "I", "N", "UP", "B"]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# --- Mypyの設定 ---
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true

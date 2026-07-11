@@ -1,0 +1,33 @@
+name: CI Quality Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run Ruff (Linter & Formatter Check)
+        run: uv run ruff check && uv run ruff format --check
+
+      - name: Run Mypy (Type Check)
+        run: uv run mypy src/ tests/
+
+      - name: Run Pytest (Unit Test)
+        run: uv run pytest
