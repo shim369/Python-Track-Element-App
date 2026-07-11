@@ -1,37 +1,55 @@
 import logging
 import logging.config
-from typing import Any
+from datetime import datetime
+from pathlib import Path
 
 
 def setup_logger() -> None:
+    """ロガーの初期設定。
+
+    fileConfig ではフィルターの詳細制御ができない制限を考慮し、dictConfig を採用。
     """
-    アプリ全体のロギングを設定する。
-    fileConfig ではなく dictConfig を使用することで、
-    柔軟なフィルター制御と、disable_existing_loggers=False による外部ライブラリロガーの保護を両立。
-    """
-    log_config: dict[str, Any] = {
+    # 1. ログディレクトリとファイル名の作成
+    log_directory = Path("logs")
+    log_directory.mkdir(parents=True, exist_ok=True)
+    log_file = log_directory / f"app_{datetime.now().strftime('%Y%m%d')}.log"
+
+    # 2. dictConfig による厳格な設定
+    config = {
         "version": 1,
-        "disable_existing_loggers": False,  # TrueにするとSpotipy内部のログが消え去る罠を防ぐ
+        # ★要求仕様: 既存のロガー（spotipy, streamlit等）を勝手に無効化せず保護する
+        "disable_existing_loggers": False,
         "formatters": {
-            "default": {
-                # 遅延フォーマット評価（%s）を前提とした標準フォーマット
-                "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
-            }
+            "standard": {
+                "format": "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
         },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                "formatter": "default",
-                "level": "INFO",
-            }
+                "formatter": "standard",
+                "level": "DEBUG",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": str(log_file),
+                "encoding": "utf-8",
+                "mode": "a",
+                "formatter": "standard",
+                "level": "DEBUG",
+            },
         },
         "root": {
-            "level": "INFO",
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
         },
     }
-    logging.config.dictConfig(log_config)
 
-    # 遅延フォーマット評価の挙動検証用
-    logger = logging.getLogger("track_element_app")
-    logger.info("Logger initialized successfully using dictConfig.")
+    logging.config.dictConfig(config)
+    logging.info("ロガーを初期化しました.")
+
+
+def get_logger(name: str) -> logging.Logger:
+    """各モジュールで個別ロガーを取得するための関数"""
+    return logging.getLogger(name)
