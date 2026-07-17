@@ -1,13 +1,13 @@
 import asyncio
 import os
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 
+import pandas as pd
 import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyOAuth
 
 from track_element_app.models.track import TrackData
-from track_element_app.utils.decorators import measure_time
 from track_element_app.utils.logger import get_logger, setup_logger
 
 # ロガーの初期化
@@ -16,38 +16,60 @@ logger = get_logger("track_element_app.main")
 
 
 # =====================================================================
-# ★試験・実務対策：非同期ジェネレータの罠シミュレーション
+# ジェネレータ・メモリ・アンパックの罠シミュレーション
 # =====================================================================
-async def dummy_track_id_generator() -> AsyncGenerator[str, None]:
-    """将来的な非同期API一括取得を見据えた、IDを1つずつ返す非同期ジェネレータ"""
-    yield "track_id_1"
-    yield "track_id_2"
+def huge_track_generator(limit: int = 10000) -> Generator[str, None, None]:
+    """数万件の楽曲IDを想定したジェネレータ（MemoryErrorを防ぐストリーミング用）"""
+    for i in range(limit):
+        yield f"track_id_heavy_{i}"
 
 
-async def simulate_async_generator_trap() -> None:
-    """anext()単体では値が評価されない仕様を検証する関数"""
-    gen = dummy_track_id_generator()
+def simulate_advanced_python_traps() -> None:
+    """ジェネレータ制限、メモリ節約、アンパック代入の挙動を検証する"""
+    logger.debug("--- [Advanced Python Traps Verification] ---")
 
-    # 罠：anext(gen) だけを呼び出しても、返ってくるのはコルーチンオブジェクト自体
-    raw_coroutine = anext(gen)
-    logger.debug("--- [Trap Verification] ---")
-    logger.debug("Just anext(gen): %s", raw_coroutine)
-    # 出力: <coroutine object ...> となり、中のデータ ("track_id_1") はまだ評価されていない！
+    # 1. ジェネレータと len() の TypeError 罠
+    gen = huge_track_generator(5)
+    try:
+        # ジェネレータオブジェクトに len() は使えない
+        _ = len(gen)  # type: ignore[arg-type]
+    except TypeError as e:
+        logger.debug("Trap 1 (Generator len): Successfully caught expected TypeError: %s", e)
+        # 対策：要素数を測るにはリスト化するかループで数える必要がある（ただしメモリに注意）
 
-    # 正解：await を添えることで、初めて非同期処理が実行されて値が取り出せる
-    real_value = await raw_coroutine
-    logger.debug("With await anext(gen): %s", real_value)  # 出力: track_id_1
-    logger.debug("---------------------------")
+    # 2. 巨大データと list() 化による MemoryError リスク
+    # 安易に list(gen) すると、すべてのデータがメモリに一挙展開され、数百万件規模だとクラッシュする
+    # 対策：Pandas や Chunk 処理などを通して、イテレータ（1個ずつ取り出す）のまま小分けにして処理する
+    # 今回はシミュレータなので、最初の3件だけ安全に取り出して評価する例
+    limited_items = [next(gen) for _ in range(3)]
+    logger.debug("Trap 2 (Memory Saver): Safely extracted partial items: %s", limited_items)
+
+    # 3. アスタリスクを使った残余引数アンパックの文法制限
+    # 1つの代入文に * (残余アスタリスク) は1つしか使えない
+    # 例： `first, *middle, *last = [1, 2, 3, 4]` ➔ SyntaxError: multiple starred expressions
+    # 例：要素数が合わない（アスタリスクがないのに数がズレている）と ValueError になる
+    try:
+        sample_list = ["Intro_Track", "BGM_1", "BGM_2", "Outro_Track"]
+        # 1つの代入文にアスタリスクは1つだけ。残余すべてをリストとして受け取る
+        first_song, *middle_songs, last_song = sample_list
+        logger.debug("Trap 3 (Unpacking): First: %s", first_song)
+        logger.debug("Trap 3 (Unpacking): Middle (Starred list): %s", middle_songs)
+        logger.debug("Trap 3 (Unpacking): Last: %s", last_song)
+
+        # ValueError を引き起こすアンパック（アスタリスクなしで要素数がズレた場合）
+        _song1, _song2 = sample_list  # 4要素あるのに2変数で受け取ろうとする
+    except ValueError as e:
+        logger.debug("Trap 3 (ValueError Case): Successfully caught ValueError: %s", e)
+
+    logger.debug("--------------------------------------------")
 
 
 # =====================================================================
-# 本番ロジック：Spotifyからのデータ取得
+# Spotify 認証 & 取得ロジック
 # =====================================================================
 def get_spotify_client() -> spotipy.Spotify:
     """環境変数から認証情報を読み込み、Spotifyクライアントを生成する"""
     load_dotenv()
-
-    # ユーザーのお気に入り曲（Scope: user-library-read）を読み取る権限を指定
     auth_manager = SpotifyOAuth(
         client_id=os.getenv("SPOTIPY_CLIENT_ID"),
         client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
@@ -57,12 +79,9 @@ def get_spotify_client() -> spotipy.Spotify:
     return spotipy.Spotify(auth_manager=auth_manager)
 
 
-@measure_time
 def fetch_favorite_tracks_features(sp: spotipy.Spotify) -> list[TrackData]:
     """直近のお気に入り曲50曲とそのオーディオ特徴量を取得する"""
     logger.info("Spotifyからお気に入り曲（直近50曲）を取得中...")
-
-    # 1. お気に入り曲の基本情報を取得（最大50曲）
     results = sp.current_user_saved_tracks(limit=50)
     items = results.get("items", [])
 
@@ -71,20 +90,15 @@ def fetch_favorite_tracks_features(sp: spotipy.Spotify) -> list[TrackData]:
         return []
 
     track_ids = [item["track"]["id"] for item in items]
-
-    # 2. オーディオ特徴量（Danceability, Energy, Valence等）を一括取得
     features_list = sp.audio_features(track_ids)
 
-    # 3. 基本情報と特徴量をガチャンと結合して TrackData データクラスに格納
     track_data_objects: list[TrackData] = []
 
     for item, features in zip(items, features_list, strict=True):
         if features is None:
-            continue  # 特徴量が取得できない特殊な曲はスキップ
+            continue
 
         track = item["track"]
-
-        # 前回作成したバリデーション機能付きデータクラス（TrackData）にマッピング
         track_data = TrackData(
             track_id=track["id"],
             title=track["name"],
@@ -99,29 +113,71 @@ def fetch_favorite_tracks_features(sp: spotipy.Spotify) -> list[TrackData]:
     return track_data_objects
 
 
-async def async_main() -> None:
-    # 1. まずは非同期ジェネレータの仕様検証を実行
-    await simulate_async_generator_trap()
+# =====================================================================
+# DJロジック（フェードイン・選曲アルゴリズム）
+# =====================================================================
+def create_fade_in_playlist(tracks: list[TrackData]) -> pd.DataFrame:
+    """Pandas を導入し、Energy がなだらかに右肩上がりになるようにソートした DataFrame を返す"""
 
-    # 2. 本番のSpotifyデータ取得を実行
+    # 1. TrackData のリストを Pandas の DataFrame に変換
+    # dataclass オブジェクトのリストは、そのまま dataclasses.asdict() するか、
+    # __dict__ 経由、または単に dict リスト化することで簡単に DataFrame に流し込めます。
+    raw_data = [
+        {
+            "title": t.title,
+            "artist": t.artist,
+            "danceability": t.danceability,
+            "energy": t.energy,
+            "valence": t.valence,
+            "release_date": t.release_date,
+        }
+        for t in tracks
+    ]
+    df = pd.DataFrame(raw_data)
+
+    if df.empty:
+        return df
+
+    # 2. DJロジック：Energy で昇順ソート（なだらかな右肩上がりにする）
+    # 同一 Energy の場合は、曲の明るさ（Valence）が高い方を後半に持ってきて、よりポジティブな流れを作る
+    sorted_df = df.sort_values(by=["energy", "valence"], ascending=[True, True]).reset_index(drop=True)
+
+    return sorted_df
+
+
+async def async_main() -> None:
+    # 1. ジェネレータ、メモリ、アンパック代入に関する試験対策シミュレーション
+    simulate_advanced_python_traps()
+
+    # 2. 本番のSpotifyデータ取得 & DJソートアルゴリズム
     try:
         sp = get_spotify_client()
         tracks = fetch_favorite_tracks_features(sp)
 
-        print("\n=== 🎵 あなたの直近お気に入り曲のオーディオ特徴量 (Top 50) ===")
-        print(f"{'Title':<30} | {'Artist':<20} | {'Dance':<6} | {'Energy':<6} | {'Valence':<6}")
+        if not tracks:
+            logger.warning("処理対象の楽曲データがありません。")
+            return
+
+        # DJ選曲ロジックを適用
+        playlist_df = create_fade_in_playlist(tracks)
+
+        print("\n=== 🎧 DJロジック適用：Energy右肩上がりプレイリスト ===")
+        print(playlist_df[["title", "artist", "energy", "valence"]].to_string(index=True))
         print("-" * 80)
 
-        for t in tracks:
-            # ターミナルで見やすくフォーマットして表示
-            print(f"{t.title[:28]:<30} | {t.artist[:18]:<20} | {t.danceability:.2f}  | {t.energy:.2f}  | {t.valence:.2f}")
+        # アンパック代入の実用例（最初と最後の曲を抽出して流れを確認）
+        if len(playlist_df) >= 2:
+            first_row = playlist_df.iloc[0]
+            last_row = playlist_df.iloc[-1]
+            print(f"🎵 1曲目（始まりの曲）: '{first_row['title']}' by {first_row['artist']} (Energy: {first_row['energy']:.2f})")
+            print(f"🔥 ラスト（最高潮の曲）: '{last_row['title']}' by {last_row['artist']} (Energy: {last_row['energy']:.2f})")
+            print("-" * 80)
 
     except Exception as e:
-        logger.error("データの取得中にエラーが発生しました: %s", e)
+        logger.error("処理中にエラーが発生しました: %s", e)
 
 
 def main() -> None:
-    """アプリケーションのエントリーポイント"""
     asyncio.run(async_main())
 
 
