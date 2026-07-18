@@ -24,6 +24,23 @@ class SpotifyClient:
         )
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
+    def create_playlist_and_add_tracks(self, playlist_name: str, track_ids: list[str]) -> dict[str, Any]:
+        """
+        ユーザーのアカウントに新規プレイリストを作成し、指定された楽曲群を保存する。
+
+        Args:
+            playlist_name: 作成するプレイリスト名
+            track_ids: 追加するSpotifyトラックIDのリスト (例: ["4pt5fD6g...", ...])
+        """
+        # ※ 結合テスト用のダミー処理（本番はセッションからトークンを取りspを初期化）
+        # 擬似的なレスポンスを返却して上位レイヤーと型を合わせる
+        return {
+            "success": True,
+            "playlist_id": "mock_playlist_37i9dQZF1DXcBWIGor7RQa",
+            "name": playlist_name,
+            "total_tracks": len(track_ids),
+        }
+
     def get_client(self) -> spotipy.Spotify:
         """生のspotipyクライアントインスタンスを返す"""
         return self.sp
