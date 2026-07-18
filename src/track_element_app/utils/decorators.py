@@ -1,7 +1,7 @@
+from collections.abc import Callable
 import functools
 import logging
 import timeit
-from collections.abc import Callable
 from typing import Any, Protocol, cast
 
 logger = logging.getLogger("track_element_app.services.spotify_client")

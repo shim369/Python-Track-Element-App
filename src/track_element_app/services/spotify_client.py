@@ -1,10 +1,10 @@
+from collections.abc import AsyncGenerator
 import logging
 import os
-from collections.abc import AsyncGenerator
 from typing import Any
 
-import spotipy
 from dotenv import load_dotenv
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 # ロガーの取得

@@ -48,6 +48,10 @@ exclude = [
 # E: pycodestyleエラー, F: Pyflakes, I: isort(並び替え), N: PEP8命名規則, UP: pyupgrade, B: bugbear
 select = ["E", "F", "I", "N", "UP", "B"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["track_element_app"]
+force-sort-within-sections = true
+
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "double"
 
