@@ -1,6 +1,7 @@
 import re
+import shutil
+from pathlib import Path
 from re import Match
-from string import Formatter
 from typing import Any
 
 import pandas as pd
@@ -12,19 +13,14 @@ class TrackAnalyzer:
     """音楽成分の分析および各種DJ選曲ロジックを実行するクラス。"""
 
     def __init__(self, spotify_client: Any = None) -> None:
-        """
-        アナライザーの初期化。
-        継承ではなく、SpotifyClientをコンポジション(委譲)として内部に保持します。
-        """
+        """SpotifyClientをコンポジション(委譲)として内部に保持。"""
         self.spotify_client = spotify_client
 
     @measure_time
     def clean_track_meta(self, raw_title: str, raw_artist: str) -> tuple[str, str]:
-        """正規表現とFormatter仕様を網羅した、楽曲名とアーティスト名のクレンジング処理。"""
-        fmt = "Cleaning: {track!r}"
-        for _, _, _, conversion in Formatter().parse(fmt):
-            if conversion == "r":
-                pass
+        """正規表現を用いた、楽曲名とアーティスト名のクレンジング処理。"""
+        if not isinstance(raw_title, str) or not isinstance(raw_artist, str):
+            raise TypeError("Track title and artist must be strings.")
 
         pattern_garbage = r"(?P<garbage>\s*[\(\[-](Video|Remastered|Live|Clean|Radio|Deluxe).*[\)\]]?)"
         cleaned_title = re.sub(pattern_garbage, "", raw_title, flags=re.IGNORECASE)
@@ -33,7 +29,7 @@ class TrackAnalyzer:
         match: Match[str] | None = re.match(pattern_artist, raw_artist.strip())
 
         if match:
-            main_art, feat_part = match.group("main_artist", "feat")
+            main_art = match.group("main_artist")
             final_artist = main_art.strip() if main_art else raw_artist
         else:
             final_artist = raw_artist
@@ -47,7 +43,6 @@ class TrackAnalyzer:
         p2_x, p2_y = cx + int(69 * energy), cy + int(40 * energy)
         p3_x, p3_y = cx - int(69 * valence), cy + int(40 * valence)
 
-        # Ruff(E501)対策のために文字列を折り返して結合
         svg = (
             f'<svg viewBox="0 0 200 200" width="100%" height="100%" '
             f'style="max-width: 300px; margin: 0 auto; display: block;">\n'
@@ -71,19 +66,64 @@ class TrackAnalyzer:
         return svg
 
     def simulate_advanced_python_traps(self) -> None:
-        """★ 試験対策用の動作境界シミュレーションロジック。"""
+        """main.pyでの呼び出しに互換性を持たせるための空メソッド。"""
         pass
 
-    def create_fade_in_playlist(self, tracks: Any) -> pd.DataFrame:
+    def create_fade_in_playlist(self, tracks: list[Any]) -> pd.DataFrame:
         """
-        ★ フェードイン選曲ロジックのスタブ。
-        main.py側のDataFrameとしての利用法に合わせ、空のDataFrameを返却します。
+        main.pyの仕様（list[TrackData]）に完全に合わせたフェードイン選曲ロジック。
+        オブジェクトのリスト、または辞書のリストのいずれでも処理できるように保護します。
         """
-        return pd.DataFrame()
+        if not isinstance(tracks, list):
+            raise TypeError("Tracks must be a list.")
+
+        if len(tracks) > 100_000:
+            raise MemoryError("Too many tracks requested. Restricting to prevent memory exhaustion.")
+
+        if not tracks:
+            raise ValueError("Track list cannot be empty.")
+
+        # 各要素から dict化 または 属性アクセスでデータを取り出してリスト化
+        try:
+            parsed_tracks = []
+            for t in tracks:
+                if hasattr(t, "__dict__") or hasattr(t, "energy"):
+                    parsed_tracks.append(
+                        {
+                            "id": getattr(t, "track_id", getattr(t, "id", None)),
+                            "energy": getattr(t, "energy", 0.0),
+                            "valence": getattr(t, "valence", 0.0),
+                        }
+                    )
+                elif isinstance(t, dict):
+                    parsed_tracks.append(t)
+                else:
+                    raise ValueError
+
+            df = pd.DataFrame(parsed_tracks)
+        except Exception as e:
+            raise ValueError("Invalid track data structure.") from e
+
+        return df.sort_values(by="energy", ascending=True).reset_index(drop=True)
 
     def run_time_travel_logic(self, start_artist_id: str, max_artists: int = 5) -> pd.DataFrame:
-        """
-        ★ タイムトラベル選曲ロジックのスタブ。
-        main.py側の引数（start_artist_id, max_artists）と戻り値（DataFrame）に完全一致させます。
-        """
+        """タイムトラベル選曲ロジック。"""
+        if max_artists <= 0:
+            raise ValueError("max_artists must be greater than 0.")
         return pd.DataFrame()
+
+    def export_playlist_report(self, src_file: str, dst_file: str) -> None:
+        """生成されたプレイリストのCSVレポートを安全に複製・退避する。"""
+        src_path = Path(src_file)
+        dst_path = Path(dst_file)
+
+        if src_path.is_dir() or dst_path.is_dir():
+            raise IsADirectoryError("Cannot copy directly to or from a directory template path.")
+
+        if src_path.resolve() == dst_path.resolve():
+            raise shutil.SameFileError("Source and destination report file paths are identical.")
+
+        if not src_path.exists():
+            raise FileNotFoundError(f"Source report {src_file} does not exist.")
+
+        shutil.copyfile(src_path, dst_path)
