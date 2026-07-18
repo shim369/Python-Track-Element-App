@@ -5,6 +5,8 @@ from typing import Any
 
 import pandas as pd
 
+from track_element_app.utils.decorators import measure_time
+
 
 class TrackAnalyzer:
     """音楽成分の分析および各種DJ選曲ロジックを実行するクラス。"""
@@ -16,6 +18,7 @@ class TrackAnalyzer:
         """
         self.spotify_client = spotify_client
 
+    @measure_time
     def clean_track_meta(self, raw_title: str, raw_artist: str) -> tuple[str, str]:
         """正規表現とFormatter仕様を網羅した、楽曲名とアーティスト名のクレンジング処理。"""
         fmt = "Cleaning: {track!r}"
