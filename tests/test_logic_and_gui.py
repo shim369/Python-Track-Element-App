@@ -2,10 +2,14 @@ import shutil
 from unittest.mock import MagicMock, patch
 
 import pytest
-from starlette.testclient import TestClient
 
-from track_element_app.gui.app import app  # FastHTMLアプリインスタンス
-from track_element_app.services.track_analyzer import TrackAnalyzer
+# 1. SpotifyClientを事前にモック化
+with patch("track_element_app.gui.app.spotify_client", autospec=True) as mock_spotify:
+    # 2. この状態で app をインポートすることで、初期化時のエラーを回避
+    from starlette.testclient import TestClient
+
+    from track_element_app.gui.app import app
+    from track_element_app.services.track_analyzer import TrackAnalyzer
 
 # =====================================================================
 # 1. ロジック・例外ハンドリングの堅牢性テスト (pytest.raises)
