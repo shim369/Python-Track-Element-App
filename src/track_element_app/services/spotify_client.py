@@ -1,3 +1,4 @@
+import logging
 import os
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -6,9 +7,20 @@ import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyOAuth
 
-from track_element_app.utils.logger import get_logger
+# ロガーの取得
+logger = logging.getLogger("track_element_app.services.spotify_client")
 
-logger = get_logger("track_element_app.services.spotify_client")
+
+class SpotifyAPIError(Exception):
+    """Spotify API通信に関するカスタム例外クラス。"""
+
+    pass
+
+
+class SpotifyTokenExpiredError(SpotifyAPIError):
+    """トークン切れ（401 Unauthorized）を表現する例外クラス。"""
+
+    pass
 
 
 class SpotifyClient:
@@ -27,13 +39,23 @@ class SpotifyClient:
     def create_playlist_and_add_tracks(self, playlist_name: str, track_ids: list[str]) -> dict[str, Any]:
         """
         ユーザーのアカウントに新規プレイリストを作成し、指定された楽曲群を保存する。
-
-        Args:
-            playlist_name: 作成するプレイリスト名
-            track_ids: 追加するSpotifyトラックIDのリスト (例: ["4pt5fD6g...", ...])
         """
-        # ※ 結合テスト用のダミー処理（本番はセッションからトークンを取りspを初期化）
-        # 擬似的なレスポンスを返却して上位レイヤーと型を合わせる
+        # 擬似エラー判定と「遅延フォーマット評価」の実装
+        if playlist_name == "error_token":
+            err_code = 401
+            # ⭕️ 遅延フォーマット評価（%s を使い、カンマで引数を渡す）
+            logger.error("Spotify authentication failed. Status code: %s", err_code)
+            raise SpotifyTokenExpiredError("アクセストークンの有効期限が切れています。再認可が必要です。")
+
+        if playlist_name == "error_api":
+            err_msg = "Rate limit exceeded"
+            logger.warning("Spotify API dynamic warning triggered. Reason: %s", err_msg)
+            raise SpotifyAPIError("Spotify APIの呼び出し制限に達しました。時間をおいて試してください。")
+
+        # 正常系のログ（ここでも文字列結合を避け、%s で遅延評価）
+        logger.info("Successfully created playlist: %s with %s tracks", playlist_name, len(track_ids))
+
+        # 既存のダミーレスポンス
         return {
             "success": True,
             "playlist_id": "mock_playlist_37i9dQZF1DXcBWIGor7RQa",
