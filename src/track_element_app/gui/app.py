@@ -27,6 +27,7 @@ from fasthtml.common import (
 from track_element_app.config.logging_config import setup_logging
 from track_element_app.services.spotify_client import SpotifyAPIError, SpotifyClient, SpotifyTokenExpiredError
 from track_element_app.services.track_analyzer import TrackAnalyzer
+from track_element_app.utils.decorators import measure_time
 
 # アプリ起動時にログ設定を初期化
 setup_logging()
@@ -110,6 +111,7 @@ def post(scope: str) -> Div:
 
 
 @rt("/save_playlist")  # type: ignore[untyped-decorator]
+@measure_time
 def save_playlist(playlist_name: str, track_ids_str: str) -> Div:
     """選曲されたトラックID群をもとに、非同期でプレイリストを構築・保存する。"""
     try:
