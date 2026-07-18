@@ -61,25 +61,32 @@
 
 ---
 
-## TrackElementApp (`src/track_element_app/main.py`)
+## FastHTML ルーティングコントローラー (`src/track_element_app/gui/app.py`)
 
-**役割：** アプリケーション全体の中央制御（DI・責務分離）
+**役割：** Webアプリケーションのエントリポイント、ルーティングおよび中央制御（DI・責務分離）
 **責務：**
 
-* 各種サービス（`SpotifyClient`, `TrackAnalyzer`, `CacheRepository`）のインスタンスを管理し、コンポジションを構築する。
-* GUIからのイベント（分析開始ボタン押下など）を受け取り、ビジネスロジックを実行してUI側に結果を返す。
-
----
-
-## TrackElementGui (`src/track_element_app/gui/app.py`)
-
-**役割：** ユーザーインターフェース（画面描画とグラフ可視化）
-**責務：**
-
-* `Streamlit` を用いたWeb UIの描画（認証ボタン、スライダー、選曲ロジック選択、書き出しボタン）。
-* `Plotly` を用いて、分析された音楽成分をレーダーチャートや散布図として画面上にオシャレに描画する。
-* **★試験対策の埋め込み：** 入力されたAPIスコープ文字列の検証や、画面へのトースト通知処理、および `f-string` によるフォーマット安全性の検証。
+* `fast_app()` から生成されたルーティング（`@rt`）を用いて、HTTPリクエスト（GET/POST）を処理する。
+* 各種サービス（`SpotifyClient`, `TrackAnalyzer`, `CacheRepository`）のインスタンスを保持・管理し、コンポジションを構築する。
+* ブラウザからの非同期リクエスト（htmx）を受け取り、ビジネスロジックを実行してUI側に最適なHTML断片オブジェクトを返却する。
+* 戻り値の型アノテーションに `Main`, `Div` 等のコンポーネント型を明示し、デコレータには `[untyped-decorator]` の型抑制（Mypy対策）を施す。
 
 **使用技術：**
 
-* `Streamlit`、`Plotly`
+* `python-fasthtml`
+
+---
+
+## FastHTML UIコンポーネントビュー (`src/track_element_app/gui/components.py` 等に分離可能)
+
+**役割：** ユーザーインターフェースの構造定義とデータ可視化
+**責務：**
+
+* FastHTMLの各種タグ関数（`Aside`, `Main`, `Form`, `Input`, `Grid`等）を用いて、Pico CSSに準拠したセマンティックでクリーンなWebレイアウトを構成する。
+* 分析された音楽成分（レーダーチャートや散布図）の描画結果を、FastHTMLコンポーネント内に安全に埋め込み表示する。
+* フォーム操作時（`hx_post`）に画面をリロードせず、ターゲットとなる要素（`hx_target="#result-area"`）だけを動的に部分置換するUI構造を定義する。
+* **★試験対策の埋め込み：** 入力されたAPIスコープ文字列のバリデーションチェック、エラー発生時の通知用HTMLコンポーネント（`cls="alert alert-danger"`）の動的返却、および `f-string` によるフォーマット安全性の検証。
+
+**使用技術：**
+
+* `python-fasthtml`、`htmx`、`Pico CSS`

@@ -17,7 +17,7 @@ def setup_logger() -> None:
     # 2. dictConfig による厳格な設定
     config = {
         "version": 1,
-        # ★要求仕様: 既存のロガー（spotipy, streamlit等）を勝手に無効化せず保護する
+        # ★要求仕様: 既存のロガー（spotipy等）を勝手に無効化せず保護する
         "disable_existing_loggers": False,
         "formatters": {
             "standard": {

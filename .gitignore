@@ -19,3 +19,5 @@ wheels/
 logs/
 .cache
 .spotipy-tokens.cache
+.sesskey
+.session_key
