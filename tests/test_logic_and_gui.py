@@ -1,10 +1,16 @@
+import os
+
+os.environ["SPOTIPY_CLIENT_ID"] = "mock_id"
+os.environ["SPOTIPY_CLIENT_SECRET"] = "mock_secret"
+os.environ["SPOTIPY_REDIRECT_URI"] = "http://localhost:8080"
+
 import shutil
 from unittest.mock import MagicMock, patch
 
 import pytest
 from starlette.testclient import TestClient
 
-from track_element_app.gui.app import app  # これで初期化エラーが出なくなる
+from track_element_app.gui.app import app
 from track_element_app.services.track_analyzer import TrackAnalyzer
 
 # =====================================================================
