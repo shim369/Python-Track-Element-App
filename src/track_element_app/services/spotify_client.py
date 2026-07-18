@@ -5,7 +5,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import CacheFileHandler, SpotifyOAuth
 
 # ロガーの取得
 logger = logging.getLogger("track_element_app.services.spotify_client")
@@ -28,11 +28,14 @@ class SpotifyClient:
 
     def __init__(self) -> None:
         load_dotenv()
+        # キャッシュハンドラーの作成
+        cache_handler = CacheFileHandler(cache_path=".cache")
         self.auth_manager = SpotifyOAuth(
             client_id=os.getenv("SPOTIPY_CLIENT_ID"),
             client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
             redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI"),
-            scope="user-library-read",
+            scope="user-library-read playlist-modify-public user-read-recently-played",
+            cache_handler=cache_handler,
         )
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
 
