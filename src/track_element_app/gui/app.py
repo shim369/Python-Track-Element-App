@@ -1,15 +1,16 @@
 from fasthtml.common import (
     H1,
     H3,
-    Aside,
     Button,
     Caption,
     Div,
     Form,
-    Input,
+    Header,
+    Img,
     Main,
     P,
     Section,
+    Style,
     Table,
     Tbody,
     Td,
@@ -27,72 +28,103 @@ from track_element_app.utils.decorators import measure_time
 
 setup_logging()
 
-app, rt = fast_app()
+# SpotifyカラーのCSSを定義
+css = """
+:root {
+    --primary: #1DB954;
+    --background-color: #121212;
+    --color: #FFFFFF;
+}
+body { background-color: var(--background-color); color: var(--color); }
+.card { background-color: #181818; padding: 1rem; border-radius: 8px; }
+.analysis-results { margin-top: 1rem; }
+
+section {padding: 1rem;}
+
+/* ボタン */
+button, .primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #000000 !important;
+    font-weight: bold;
+}
+
+/* テーブルの背景を薄いグリーンに修正 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+thead th {
+    background-color: var(--primary) !important;
+    color: #000 !important;
+}
+/* tdとthのデフォルト背景を上書き */
+td, th {
+    background-color: rgba(29, 185, 84, 0.1) !important;
+    border-bottom: 1px solid #333 !important;
+    color: #fff !important;
+}
+/* ホバーした時に少し明るくするとSpotifyっぽくなります */
+tbody tr:hover td {
+    background-color: rgba(29, 185, 84, 0.2) !important;
+}
+"""
+app, rt = fast_app(hdrs=(Style(css),))
 analyzer = TrackAnalyzer()
 spotify_client = SpotifyClient()
 
 
 @rt("/")  # type: ignore[untyped-decorator]
 def get() -> Main:
-    header = Section(
-        H1("Track Element App"),
-        Caption("Spotifyの楽曲データを多角的に分析し、時間旅行のような選曲体験を。"),
-    )
-    sidebar = Aside(
-        H3("配信・認証設定"),
+    # タイトルとボタンを同じエリアに配置
+    header = Header(
+        Div(H1("Spotify Library Recent", style="margin-bottom: 0; color: #1DB954;"), Caption("直近でライブラリに追加した楽曲を表示"), style="flex: 1;"),
         Form(
-            Input(
-                type="text",
-                name="scope",
-                value="user-library-read playlist-modify-public user-read-recently-played",
-                placeholder="APIスコープを入力",
-            ),
-            Button("分析を開始する", type="submit", cls="primary"),
+            Button("最新の追加曲を取得", type="submit", cls="primary"),
             hx_post="/analyze",
             hx_target="#result-area",
+            style="margin-bottom: 0;",
         ),
-        Div(H3("システムステータス"), P("API接続可能 (認証待ち)", id="status-text"), cls="card"),
+        style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: #181818; border-radius: 8px; margin-bottom: 1rem;",
     )
-    main_content = Section(H3("分析結果 / 可視化レーダー"), Div(P("サイドバーから分析を開始してください。"), id="result-area"))
-    return Main(header, Div(sidebar, main_content, cls="grid"), cls="container")
+
+    main_content = Section(Div(P("ボタンを押して取得を開始してください。"), id="result-area"))
+
+    return Main(header, main_content, cls="container")
 
 
 @rt("/analyze")  # type: ignore[untyped-decorator]
-def post(scope: str) -> Div:
+def post() -> Div:
     try:
-        # 50曲取得（ここは変えません）
         saved_tracks_data = spotify_client.fetch_user_saved_tracks(limit=50)
         items = saved_tracks_data.get("items", [])
 
-        # 特徴量は取れないものとして、単にライブラリの楽曲情報を表示する
-        track_list = [item["track"] for item in items if item.get("track")]
+        track_list = [{"track": item["track"], "added_at": item["added_at"]} for item in items if item.get("track")]
 
         if not track_list:
-            return Div(P("ライブラリから楽曲が見つかりませんでした。"), cls="alert alert-warning")
+            return Div(P("楽曲が見つかりませんでした。"), cls="alert alert-warning")
 
-        # 最初の楽曲をデモとして表示する
-        target_track = track_list[0]
-        clean_title, _ = analyzer.clean_track_meta(target_track["name"], target_track["artists"][0]["name"])
+        sorted_tracks = sorted(track_list, key=lambda t: t["added_at"], reverse=True)
 
-        # 楽曲のメタデータでテーブルを作成
-        result_table = Table(
-            Thead(Tr(Th("項目"), Th("値"))),
-            Tbody(
-                Tr(Td("楽曲名"), Td(clean_title)),
-                Tr(Td("アーティスト"), Td(target_track["artists"][0]["name"])),
-                Tr(Td("アルバム"), Td(target_track["album"]["name"])),
-                Tr(Td("リリース日"), Td(target_track["album"]["release_date"])),
-            ),
-        )
+        ranking_items = [
+            Tr(
+                # 画像を追加 (高さ40px程度に制限)
+                Td(Img(src=t["track"]["album"]["images"][-1]["url"], style="height: 40px; border-radius: 4px;")),
+                Td(t["track"]["artists"][0]["name"]),
+                Td(t["track"]["name"]),
+                Td(t["added_at"][:10]),
+            )
+            for t in sorted_tracks[:10]
+        ]
 
+        # 余計なステータス表示を削除し、結果テーブルだけにする
         return Div(
-            Div(P("🎉 楽曲データの取得に成功しました（メタデータを使用）。"), cls="alert alert-success"),
-            H3("楽曲詳細データ"),
-            result_table,
-            # (以下、保存ボタンなどの描画はそのまま)
+            H3("最近お気に入りに追加した楽曲"),
+            Table(Thead(Tr(Th(""), Th("アーティスト名"), Th("曲名"), Th("追加日"))), Tbody(*ranking_items)),
+            cls="analysis-results",
         )
     except Exception as err:
-        return Div(P(f"【エラー】: {err}"), cls="alert alert-danger")
+        return Div(P(f"エラー: {err}"), cls="alert alert-danger")
 
 
 @rt("/save_playlist")  # type: ignore[untyped-decorator]

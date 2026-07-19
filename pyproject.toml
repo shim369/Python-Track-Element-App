@@ -33,7 +33,7 @@ packages = ["src/track_element_app"]
 # --- Ruffの設定 ---
 [tool.ruff]
 target-version = "py312"
-line-length = 130
+line-length = 170
 # 無駄な解析をスキップするための除外パス設定
 exclude = [
     ".git",
