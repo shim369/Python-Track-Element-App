@@ -10,31 +10,28 @@ logger = get_logger("track_element_app.main")
 
 
 async def async_main() -> None:
-    # 1. 各コンポーネントのインスタンス化と依存性の注入 (DI)
     spotify_client = SpotifyClient()
     analyzer = TrackAnalyzer(spotify_client=spotify_client)
 
-    # 2. 各種試験対策シミュレーションの実行
-    analyzer.simulate_advanced_python_traps()
-    await spotify_client.simulate_anext_trap()
-
-    # 3. メインビジネスロジックの実行
     try:
-        # --- ロジックA: お気に入り50曲のフェードイン選曲 ---
-        logger.info("お気に入り曲の取得を開始します...")
+        # --- ロジック: 最近再生した曲の取得と分析 ---
+        logger.info("最近再生した楽曲の取得を開始します...")
 
-        raw_saved_tracks = spotify_client.fetch_user_saved_tracks(limit=50)
-        items = raw_saved_tracks.get("items", [])
+        # 1. 最近の再生履歴を取得
+        recent_data = spotify_client.fetch_recently_played_tracks(limit=50)
+        items = recent_data.get("items", [])
 
         if not items:
-            logger.warning("お気に入り曲が見つかりませんでした。")
+            logger.warning("最近の再生履歴が見つかりませんでした。")
             return
 
-        track_ids = [item["track"]["id"] for item in items]
+        # 重複を除去しつつ、トラックIDを抽出
+        track_ids = list({item["track"]["id"] for item in items})
         features_list = spotify_client.fetch_audio_features(track_ids)
 
+        # データの構築
         tracks = []
-        for item, features in zip(items, features_list, strict=True):
+        for item, features in zip(items, features_list, strict=False):
             if features is None:
                 continue
             t = item["track"]
@@ -50,25 +47,18 @@ async def async_main() -> None:
                 )
             )
 
+        # 2. 分析・選曲ロジック適用
         playlist_df = analyzer.create_fade_in_playlist(tracks)
-        print("\n=== 🎧 DJロジック適用：Energy右肩上がりプレイリスト ===")
-        print(playlist_df[["title", "artist", "energy", "valence"]].to_string(index=True))
-        print("-" * 80)
+        print("\n=== 🎵 今週の再生履歴からプレイリストを作成 ===")
+        print(playlist_df[["title", "artist", "energy"]].to_string(index=True))
 
-        # --- ロジックB: 1970〜80年代のタイムトラベル選曲 ---
-        # サンプルとして、お気に入り1曲目のアーティストの関連を探索
-        if tracks:
-            sample_artist_id = items[0]["track"]["artists"][0]["id"]
-            sample_artist_name = items[0]["track"]["artists"][0]["name"]
-
-            print(f"\n=== 🕰️ タイムトラベル選曲：{sample_artist_name} の遺伝子 (1970-80s) ===")
-            retro_df = analyzer.run_time_travel_logic(start_artist_id=sample_artist_id, max_artists=5)
-            if not retro_df.empty:
-                print(retro_df[["title", "artist", "release_date", "energy"]].to_string(index=True))
-            print("-" * 80)
+        # 3. プレイリスト化（自動保存）
+        target_track_ids = playlist_df["track_id"].tolist()
+        result = spotify_client.create_playlist_and_add_tracks(name="My Weekly Favorites (Auto)", track_ids=target_track_ids)
+        logger.info("プレイリストを作成しました: %s", result["playlist_id"])
 
     except Exception as e:
-        logger.error("メイン処理中に予期せぬエラーが発生しました: %s", e, exc_info=True)
+        logger.error("処理中にエラーが発生しました: %s", e, exc_info=True)
 
 
 def main() -> None:

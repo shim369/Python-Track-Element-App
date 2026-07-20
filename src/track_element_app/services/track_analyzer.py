@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 
+from track_element_app.models.track import TrackData
 from track_element_app.utils.decorators import measure_time
 
 
@@ -69,7 +70,7 @@ class TrackAnalyzer:
         """main.pyでの呼び出しに互換性を持たせるための空メソッド。"""
         pass
 
-    def create_fade_in_playlist(self, tracks: list[Any]) -> pd.DataFrame:
+    def create_fade_in_playlist(self, tracks: list[Any]) -> Any:
         """
         main.pyの仕様（list[TrackData]）に完全に合わせたフェードイン選曲ロジック。
         オブジェクトのリスト、または辞書のリストのいずれでも処理できるように保護します。
@@ -127,3 +128,28 @@ class TrackAnalyzer:
             raise FileNotFoundError(f"Source report {src_file} does not exist.")
 
         shutil.copyfile(src_path, dst_path)
+
+    @measure_time
+    def transform_to_track_data(self, items: list[Any], is_saved_tracks: bool = False) -> list[TrackData]:
+        """
+        APIレスポンスをTrackDataのリストに変換。
+        Saved Tracksは 'track' キーの下にデータがあるが、Top Tracksは直接オブジェクトが並ぶ。
+        """
+        tracks = []
+        for item in items:
+            # 構造の違いを吸収
+            t = item["track"] if is_saved_tracks else item
+
+            tracks.append(
+                TrackData(
+                    track_id=t["id"],
+                    title=t["name"],
+                    artist=t["artists"][0]["name"],
+                    release_date=t.get("album", {}).get("release_date", "Unknown"),
+                    # オーディオ特徴量は別途APIが必要なため、現在はプレースホルダを設定
+                    danceability=0.0,
+                    energy=0.0,
+                    valence=0.0,
+                )
+            )
+        return tracks

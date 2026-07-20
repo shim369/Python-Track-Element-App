@@ -101,7 +101,7 @@ def test_fasthtml_endpoints_offline() -> None:
     # 1. メイン画面のレンダリング確認
     response = client.get("/")
     assert response.status_code == 200
-    assert "Spotify Library Recent" in response.text
+    assert "Spotify Insights" in response.text
 
     # 2. プレイリスト保存エンドポイントのモック検証
     with patch("track_element_app.gui.app.spotify_client") as mock_app_client:
