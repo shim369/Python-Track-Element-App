@@ -1,6 +1,6 @@
-# Spotify Library Recent
+# Spotify Insights
 
-Python学習を目的として開発した、Spotifyライブラリの最新状況確認アプリケーションです。
+Python学習を目的として開発した、Spotifyライブラリ・ブラウザです。
 
 Python3エンジニア認定実践試験の学習範囲を、Spotify API・Webフロントエンド・自動テストを利用した実践的なアプリケーション開発を通して体系的に学ぶことを目的として作成しました。
 
@@ -8,9 +8,9 @@ Python3エンジニア認定実践試験の学習範囲を、Spotify API・Web�
 
 ## 概要
 
-Spotifyのライブラリに直近で保存した楽曲をスッキリと一覧表示し、自分の「今の音楽の入り口」を確認するためのWebアプリケーションです。
+Spotifyのライブラリに保存した楽曲を「直近の追加曲」と「週間再生トップ10」の2つのタブで整理し、効率的にブラウジングするWebアプリケーションです。
 
-FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、ロギング、GitHub ActionsによるCI環境を実装しています。
+FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、ロギング、GitHub ActionsによるCI環境を実装しています。「週間再生トップ10」タブでは、抽出した楽曲からSpotify上に直接新しいプレイリストを作成可能です。
 
 責務分離（Service・Repository）、型ヒントによる静的解析、Ruffによるコード品質管理を採用し、保守性・拡張性を意識した設計を行いました。
 
@@ -19,9 +19,9 @@ FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、
 ## 主な機能
 
 * Spotify API（OAuth 2.0認可フロー）連携
-* 直近ライブラリ追加楽曲の取得・表示
-* アルバムジャケットの動的描画
-* ユーザーのお気に入り楽曲分析
+* **タブ切り替え UI:** 「直近の追加曲」と「週間再生トップ10」の表示切り替え
+* 楽曲情報の詳細表示（アルバムジャケットの動的描画）
+* **プレイリスト自動生成:** 「週間再生トップ10」からの新規プレイリスト作成
 * FastHTML/htmxによるリロード不要な非同期UI
 * loggingによる詳細なログ出力
 * デコレータによる処理時間計測
@@ -33,7 +33,7 @@ FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、
 
 ### Main Window
 
-![Spotify Library Recent](docs/images/main.png)
+![Spotify Insights](docs/images/main.png)
 
 ---
 
