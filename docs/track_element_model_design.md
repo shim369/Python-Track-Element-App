@@ -6,7 +6,7 @@
 
 ### `SpotifyClient` (`services/spotify_client.py`)
 * **役割:** APIとの通信管理。
-* **責務:** OAuth認証、ライブラリ取得、週間トップ楽曲データの抽出、`create_playlist_and_add_tracks`（週間トップ専用）。
+* **責務:** OAuth認証、ライブラリ取得、週間再生トップ10データの抽出、`create_playlist_and_add_tracks`（週間トップ専用）。
 
 ### `TrackAnalyzer` (`services/track_analyzer.py`)
 * **役割:** 分析・加工ロジック。

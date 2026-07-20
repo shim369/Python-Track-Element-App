@@ -37,6 +37,7 @@ css = """
     --color: #FFFFFF;
 }
 body { background-color: var(--background-color); color: var(--color); }
+header { padding: 1rem; }
 .analysis-results { margin-top: 1rem; }
 .tab-container { display: flex; gap: 1rem; margin: 1rem 0; border-bottom: 1px solid #333; }
 .tab-link { cursor: pointer; padding: 0.5rem 1rem; color: #b3b3b3; text-decoration: none; }
@@ -46,6 +47,17 @@ table { border-collapse: collapse; width: 100%; }
 thead th { background-color: var(--primary) !important; color: #000 !important; }
 td, th { background-color: rgba(29, 185, 84, 0.1) !important; border-bottom: 1px solid #333 !important; color: #fff !important; }
 tbody tr:hover td { background-color: rgba(29, 185, 84, 0.2) !important; }
+.btn-playlist {
+    background-color: var(--primary-dark) !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 0.8rem 1.5rem !important;
+    border-radius: 20px !important;
+    cursor: pointer;
+}
+.btn-playlist:hover {
+    background-color: #166534 !important; /* ホバー時はさらに濃く */
+}
 """
 
 app, rt = fast_app(hdrs=(Style(css),))
@@ -60,7 +72,7 @@ def get() -> Main:
         Div(
             Div(
                 A("直近の追加曲", hx_get="/analyze", hx_target="#result-area", cls="tab-link active", onclick="updateActiveTab(this)"),
-                A("週間トップ楽曲", hx_get="/get_top_tracks", hx_target="#result-area", cls="tab-link", onclick="updateActiveTab(this)"),
+                A("週間再生トップ10", hx_get="/get_top_tracks", hx_target="#result-area", cls="tab-link", onclick="updateActiveTab(this)"),
                 cls="tab-container",
             ),
             Div(id="result-area", hx_get="/analyze", hx_trigger="load"),
@@ -124,12 +136,12 @@ def get_top_tracks() -> Div:
         ]
 
         return Div(
-            H3("週間トップ楽曲"),
+            H3("今週の再生トップ10楽曲"),
             # プレイリスト作成フォーム
             Form(
                 Input(type="hidden", name="track_ids_str", value=track_ids),
                 Input(type="text", name="playlist_name", placeholder="プレイリスト名", required=True),
-                Button("このリストでプレイリストを作成", type="submit"),
+                Button("このリストでプレイリストを作成", type="submit", cls="btn-playlist"),
                 hx_post="/save_playlist",
                 hx_target="#result-area",
             ),
