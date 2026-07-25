@@ -105,6 +105,18 @@ cd Python-Spotify-Insights-main
 uv sync
 ```
 
+## Spotify Developer App の作成
+
+本アプリを利用するには、Spotify Developer App を作成する必要があります。
+
+1. Spotify Developer Dashboard にアクセス
+2. 「Create App」をクリック
+3. App Name と App Description を入力
+4. Redirect URI を登録
+   - http://127.0.0.1:5001/
+5. Client ID と Client Secret を取得
+6. `.env` に設定
+
 ### 環境変数設定
 
 プロジェクトルートに `.env` を作成し、以下を設定してください。
