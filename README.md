@@ -109,7 +109,8 @@ uv sync
 
 本アプリを利用するには、Spotify Developer App を作成する必要があります。
 
-1. Spotify Developer Dashboard にアクセス
+1. Spotify for Developers にアクセス
+https://developer.spotify.com/
 2. 「Create App」をクリック
 3. App Name と App Description を入力
 4. Redirect URI を登録
