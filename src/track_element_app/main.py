@@ -55,9 +55,7 @@ async def async_main() -> None:
 
         # 4. プレイリスト化（自動保存）
         target_track_ids = playlist_df["track_id"].tolist()
-        result = spotify_client.create_playlist_and_add_tracks(
-            name="My Weekly Favorites (Auto)", track_ids=target_track_ids
-        )
+        result = spotify_client.create_playlist_and_add_tracks(name="My Weekly Favorites (Auto)", track_ids=target_track_ids)
         # spotipyのレスポンス仕様に合わせて result["id"] を参照する
         logger.info("プレイリストを作成しました: %s", result.get("id"))
 
