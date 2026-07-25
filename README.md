@@ -57,7 +57,7 @@ FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、
 ## ディレクトリ構成
 
 ```text
-python-track-element-app/
+Python-Spotify-Insights-main/
 ├── LICENSE
 ├── README.md
 ├── pyproject.toml
@@ -68,7 +68,7 @@ python-track-element-app/
 │   │   └── main2.png
 │   ├── requirements_definition.md
 │   ├── screen_transition.md
-│   └── track_element_model_design.md
+│   └── model_design.md
 ├── logs/                 # 実行ログ
 ├── src/
 │   └── track_element_app/
