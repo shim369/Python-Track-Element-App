@@ -100,7 +100,7 @@ python-track-element-app/
 
 ```bash
 git clone <repository-url>
-cd python-track-element-app
+cd Python-Spotify-Insights-main
 
 uv sync
 ```
@@ -112,7 +112,7 @@ uv sync
 ```env
 SPOTIPY_CLIENT_ID=your_client_id
 SPOTIPY_CLIENT_SECRET=your_client_secret
-SPOTIPY_REDIRECT_URI=http://localhost:5001/
+SPOTIPY_REDIRECT_URI=http://127.0.0.1:5001/
 
 ```
 
@@ -123,7 +123,7 @@ Webアプリケーション（FastHTMLダッシュボード）を起動する場
 ```bash
 uv run python src/track_element_app/gui/app.py
 ```
-起動後、ブラウザで http://localhost:5001 にアクセスしてください。
+起動後、ブラウザで http://127.0.0.1:5001/ にアクセスしてください。
 
 ---
 

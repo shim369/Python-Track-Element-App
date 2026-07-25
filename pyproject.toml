@@ -1,5 +1,5 @@
 [project]
-name = "python-track-element-app"
+name = "python-spotify-insights"
 version = "0.1.0"
 description = "An app that analyzes Spotify data and selects songs using a proprietary DJ logic."
 readme = "README.md"
