@@ -68,9 +68,6 @@ class SpotifyClient:
     def fetch_user_saved_tracks(self, limit: int = 50) -> dict[str, Any]:
         return cast(dict[str, Any], self.sp.current_user_saved_tracks(limit=limit))
 
-    def fetch_audio_features(self, track_ids: list[str]) -> list[Any]:
-        return cast(list[Any], self.sp.audio_features(track_ids))
-
     def fetch_related_artists(self, artist_id: str) -> list[dict[str, Any]]:
         results = self.sp.artist_related_artists(artist_id)
         return cast(list[dict[str, Any]], results.get("artists", []))

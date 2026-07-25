@@ -33,7 +33,8 @@ FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、
 
 ### Main Window
 
-![Spotify Insights](docs/images/main.png)
+![Spotify Insights](docs/images/main1.png)
+![Spotify Insights](docs/images/main2.png)
 
 ---
 
@@ -57,16 +58,38 @@ FastHTMLを用いた非同期Web UI、htmxによる操作、Spotify API連携、
 
 ```text
 python-track-element-app/
-├── src/track_element_app/
-│   ├── config/       # 設定管理（Logging）
-│   ├── gui/          # FastHTMLルーティング・UI
-│   ├── models/       # データクラス（TrackData）
-│   ├── services/     # API通信・分析ロジック
-│   └── utils/        # デコレータ・共通ツール
-├── tests/            # テストコード
-├── docs/             # ドキュメント
-└── logs/             # 実行ログ
-
+├── LICENSE
+├── README.md
+├── pyproject.toml
+├── uv.lock
+├── docs/
+│   ├── images/
+│   │   ├── main1.png
+│   │   └── main2.png
+│   ├── requirements_definition.md
+│   ├── screen_transition.md
+│   └── track_element_model_design.md
+├── logs/                 # 実行ログ
+├── src/
+│   └── track_element_app/
+│       ├── __init__.py
+│       ├── main.py       # CLI版エントリーポイント
+│       ├── config/       # 設定管理（Logging）
+│       │   └── logging_config.py
+│       ├── gui/          # FastHTMLルーティング・UI
+│       │   └── app.py    # Webアプリ版エントリーポイント
+│       ├── models/       # データクラス
+│       │   └── track.py
+│       ├── services/     # API通信・分析ロジック
+│       │   ├── spotify_client.py
+│       │   └── track_analyzer.py
+│       └── utils/        # デコレータ・共通ツール
+│           ├── decorators.py
+│           └── logger.py
+└── tests/                # テストコード
+    ├── conftest.py
+    ├── test_logic_and_gui.py
+    └── test_track.py
 ```
 
 ---
@@ -80,7 +103,6 @@ git clone <repository-url>
 cd python-track-element-app
 
 uv sync
-
 ```
 
 ### 環境変数設定
@@ -96,10 +118,12 @@ SPOTIPY_REDIRECT_URI=http://localhost:5001/
 
 ### 起動方法
 
-```bash
-uv run python src/track_element_app/main.py
+Webアプリケーション（FastHTMLダッシュボード）を起動する場合：
 
+```bash
+uv run python src/track_element_app/gui/app.py
 ```
+起動後、ブラウザで http://localhost:5001 にアクセスしてください。
 
 ---
 

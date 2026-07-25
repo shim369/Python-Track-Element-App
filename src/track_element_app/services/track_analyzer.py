@@ -72,8 +72,7 @@ class TrackAnalyzer:
 
     def create_fade_in_playlist(self, tracks: list[Any]) -> Any:
         """
-        main.pyの仕様（list[TrackData]）に完全に合わせたフェードイン選曲ロジック。
-        オブジェクトのリスト、または辞書のリストのいずれでも処理できるように保護します。
+        音声特徴量に依存せず、取得したトラック一覧をそのままプレイリスト用のDataFrameに変換する。
         """
         if not isinstance(tracks, list):
             raise TypeError("Tracks must be a list.")
@@ -84,16 +83,16 @@ class TrackAnalyzer:
         if not tracks:
             raise ValueError("Track list cannot be empty.")
 
-        # 各要素から dict化 または 属性アクセスでデータを取り出してリスト化
         try:
             parsed_tracks = []
             for t in tracks:
-                if hasattr(t, "__dict__") or hasattr(t, "energy"):
+                if hasattr(t, "__dict__") or hasattr(t, "track_id"):
                     parsed_tracks.append(
                         {
-                            "id": getattr(t, "track_id", getattr(t, "id", None)),
-                            "energy": getattr(t, "energy", 0.0),
-                            "valence": getattr(t, "valence", 0.0),
+                            "track_id": getattr(t, "track_id", None),
+                            "title": getattr(t, "title", "Unknown"),
+                            "artist": getattr(t, "artist", "Unknown"),
+                            "release_date": getattr(t, "release_date", "Unknown"),
                         }
                     )
                 elif isinstance(t, dict):
@@ -105,7 +104,7 @@ class TrackAnalyzer:
         except Exception as e:
             raise ValueError("Invalid track data structure.") from e
 
-        return df.sort_values(by="energy", ascending=True).reset_index(drop=True)
+        return df.reset_index(drop=True)
 
     def run_time_travel_logic(self, start_artist_id: str, max_artists: int = 5) -> pd.DataFrame:
         """タイムトラベル選曲ロジック。"""
@@ -131,13 +130,9 @@ class TrackAnalyzer:
 
     @measure_time
     def transform_to_track_data(self, items: list[Any], is_saved_tracks: bool = False) -> list[TrackData]:
-        """
-        APIレスポンスをTrackDataのリストに変換。
-        Saved Tracksは 'track' キーの下にデータがあるが、Top Tracksは直接オブジェクトが並ぶ。
-        """
+        """APIレスポンスをTrackDataのリストに変換。"""
         tracks = []
         for item in items:
-            # 構造の違いを吸収
             t = item["track"] if is_saved_tracks else item
 
             tracks.append(
@@ -146,7 +141,6 @@ class TrackAnalyzer:
                     title=t["name"],
                     artist=t["artists"][0]["name"],
                     release_date=t.get("album", {}).get("release_date", "Unknown"),
-                    # オーディオ特徴量は別途APIが必要なため、現在はプレースホルダを設定
                     danceability=0.0,
                     energy=0.0,
                     valence=0.0,
